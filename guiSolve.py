@@ -1,5 +1,6 @@
 import pygame
 import time
+import button
 pygame.font.init()
 
 
@@ -27,8 +28,10 @@ class Grid:
         self.selected = None
         self.win = win
     
+    
     def update_model(self):
         self.model = [[self.cubes[i][j].value for j in range(self.cols)] for i in range(self.rows)]
+
     
     def place(self, val):
         row, col = self.selected
@@ -262,10 +265,56 @@ def format_time(secs):
 
     return mat
 
+def hard_mode():
+    while t:
+        mins, secs = divmod(t, 60)
+        timeformat = '{:02d}:{:02d}'.format(mins, secs)
+        print(timeformat, end='\r')
+        time.sleep(1)
+        t -= 1
 
-def main():
-    Difficulty = input('Pick one // Easy, Medium, Hard: ')
 
+def start():
+    screen = pygame.display.set_mode((540, 600))
+    pygame.display.set_caption('Button Demo')
+
+    #load button images
+    easy_img = pygame.image.load('images/eay.png').convert_alpha()
+    hard_img = pygame.image.load('images/hard.png').convert_alpha()
+
+    #create button instances
+    easy_button = button.Button(155, 150, easy_img, 0.8)
+    hard_button = button.Button(155, 300, hard_img, 0.8)
+
+    difficulty = None
+
+    #game loop
+    run = True
+    while run:
+
+        screen.fill((250, 250, 250))
+
+        if easy_button.draw(screen):
+            difficulty = 'easy'
+            run = False
+            game(difficulty)
+
+        if hard_button.draw(screen):
+            difficulty = 'hard'
+            run = False
+            game(difficulty)
+
+        #event handler
+        for event in pygame.event.get():
+            #quit game
+            if event.type == pygame.QUIT:
+                run = False
+
+        pygame.display.update()
+
+    pygame.quit()
+
+def game(diff):
     win = pygame.display.set_mode((540, 600))
     pygame.display.set_caption('Sudoku')
     board = Grid(9, 9, 540, 540, win)
@@ -273,9 +322,15 @@ def main():
     run = True
     start = time.time()
     strikes = 0
+    time_inc_dec = 300
     while run:
 
-        play_time = round(time.time() - start)
+        if diff == 'hard':
+            play_time = time_inc_dec
+            play_time -= round(time.time() - start)
+
+        else:
+            play_time = round(time.time() - start)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -330,16 +385,17 @@ def main():
                     if board.cubes[i][j].temp != 0:
                         if board.place(board.cubes[i][j].temp):
                             print('Success')
+                            
+                            if diff == 'hard':
+                                time_inc_dec += 10
                         
                         else:
                             print('Wrong')
                             strikes += 1
-                            if Difficulty == 'Medium' and strikes > 10:
-                                print('Game Over')
-                                run = False
-                            if Difficulty == 'Hard' and strikes > 5:
-                                print('Game Over')
-                                run = False
+                            if diff == 'hard':
+                                time_inc_dec -= 20
+
+
                         key = None
 
                         if board.is_finished():
@@ -358,7 +414,10 @@ def main():
         redraw_window(win, board, play_time, strikes)
         pygame.display.update()
 
-main()
+        if play_time <= 0:
+            run = False
+
+start()
 pygame.quit()
 
 
